@@ -1,0 +1,883 @@
+================================================================================
+ALGORITMOS PARA EXAMEN FINAL - TEMA 5
+Inteligencia Artificial - UNAM Facultad de Ciencias
+Dra. Jessica Sarahi Méndez Rincón
+================================================================================
+
+Algoritmos que pueden venir (según la profesora):
+   1. Distancia de Levenshtein  (PNL)
+   2. Word2Vec                  (PNL)
+   3. Filtro de Sobel           (Visión Computacional)
+
+Cada algoritmo incluye:
+   - Fundamentos matemáticos
+   - Descripción formal / narrativa
+   - Algoritmo en lenguaje natural
+   - Complejidad temporal y espacial
+   - Pseudocódigo
+   - Código en Python (con buenas prácticas)
+   - Ejemplo de uso
+
+
+================================================================================
+                  1. DISTANCIA DE LEVENSHTEIN (PNL)
+================================================================================
+
+--------------------------------------------------------------------------------
+CONCEPTO Y FUNDAMENTOS MATEMÁTICOS
+--------------------------------------------------------------------------------
+
+La distancia de Levenshtein, propuesta por Vladimir Levenshtein en 1965,
+es una métrica que mide la DIFERENCIA entre dos cadenas de texto. Se define
+como el número MÍNIMO de operaciones de edición (inserción, eliminación o
+sustitución de un solo carácter) necesarias para transformar una cadena
+en otra.
+
+Operaciones permitidas, cada una con costo 1:
+   - INSERCIÓN: agregar un carácter.
+   - ELIMINACIÓN: borrar un carácter.
+   - SUSTITUCIÓN: reemplazar un carácter por otro.
+
+DEFINICIÓN RECURSIVA:
+
+Sean a = a₁a₂...aₘ y b = b₁b₂...bₙ dos cadenas de longitudes m y n.
+La distancia lev(i, j) se define como:
+
+           ⎧ max(i, j)                          si min(i, j) = 0
+           ⎪
+lev(i,j) = ⎨ lev(i-1, j-1)                     si aᵢ = bⱼ
+           ⎪
+           ⎪          ⎧ lev(i-1, j)   + 1    (eliminación)
+           ⎩ min      ⎨ lev(i,   j-1) + 1    (inserción)
+                      ⎩ lev(i-1, j-1) + 1    (sustitución)
+                                              si aᵢ ≠ bⱼ
+
+CASOS BASE:
+   - lev(0, j) = j   (insertar j caracteres en cadena vacía)
+   - lev(i, 0) = i   (eliminar i caracteres hasta cadena vacía)
+
+RESULTADO FINAL: lev(m, n)
+
+PROPIEDADES MATEMÁTICAS:
+   - No negatividad: lev(a, b) ≥ 0
+   - Identidad: lev(a, b) = 0 ⇔ a = b
+   - Simetría: lev(a, b) = lev(b, a)
+   - Desigualdad triangular: lev(a, c) ≤ lev(a, b) + lev(b, c)
+   - Rango: 0 ≤ lev(a, b) ≤ max(|a|, |b|)
+
+
+EJEMPLO PASO A PASO:
+   Cadenas: "casa" → "calle"
+   
+   Transformaciones óptimas:
+      c-a-s-a
+      c-a-s-l-a   (insertar 'l')   ← costo 1
+      c-a-l-l-a   (sustituir 's' por 'l') ← costo 1
+      c-a-l-l-e   (sustituir 'a' por 'e') ← costo 1
+   
+   Distancia de Levenshtein = 3
+
+
+--------------------------------------------------------------------------------
+DESCRIPCIÓN NARRATIVA DEL ALGORITMO
+--------------------------------------------------------------------------------
+
+El algoritmo usa PROGRAMACIÓN DINÁMICA. Construye una matriz D de
+(m+1) × (n+1) donde D[i][j] almacena la distancia de Levenshtein entre
+los primeros i caracteres de la palabra A y los primeros j caracteres
+de la palabra B.
+
+Se llena la matriz fila por fila, comparando cada carácter de A con
+cada carácter de B. En cada celda se decide la operación de menor costo:
+mantener (si los caracteres son iguales), insertar, eliminar o sustituir.
+
+El valor final en la esquina inferior derecha D[m][n] es la distancia
+mínima de edición entre las dos cadenas completas.
+
+USOS PRINCIPALES EN IA / PLN:
+   - Corrección ortográfica (autocompletar, "¿quisiste decir...?")
+   - Detección de plagio
+   - Búsqueda difusa (fuzzy matching)
+   - Bioinformática (alineación de secuencias de ADN)
+   - OCR (corrección de errores en reconocimiento de texto)
+   - Normalización de nombres y direcciones
+
+
+--------------------------------------------------------------------------------
+ALGORITMO EN LENGUAJE NATURAL
+--------------------------------------------------------------------------------
+
+1. Carga: Recibir dos cadenas de texto s1 y s2.
+2. Inicialización: Crear una matriz D de (m+1) × (n+1) inicializada en 0.
+3. Casos base:
+      - Llenar la primera columna con 0, 1, 2, ..., m.
+      - Llenar la primera fila con 0, 1, 2, ..., n.
+4. Llenado iterativo:
+      Para cada i de 1 a m:
+         Para cada j de 1 a n:
+            Si s1[i-1] == s2[j-1]:
+               D[i][j] = D[i-1][j-1]      (sin costo)
+            Si no:
+               D[i][j] = 1 + min(
+                  D[i-1][j],               (eliminación)
+                  D[i][j-1],               (inserción)
+                  D[i-1][j-1]              (sustitución)
+               )
+5. Salida: Retornar D[m][n] como la distancia mínima.
+
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE COMPLEJIDAD
+--------------------------------------------------------------------------------
+
+• Complejidad Temporal: O(m × n)
+   Se recorren todas las celdas de la matriz una sola vez, con operaciones
+   constantes en cada celda.
+
+• Complejidad Espacial: O(m × n)
+   Se necesita una matriz completa para el método estándar.
+   Optimización: O(min(m, n)) usando solo dos filas (o una con variables
+   auxiliares), ya que solo se necesita la fila anterior para calcular
+   la siguiente.
+
+
+--------------------------------------------------------------------------------
+PSEUDOCÓDIGO
+--------------------------------------------------------------------------------
+
+Función Levenshtein(s1, s2):
+    m = longitud(s1)
+    n = longitud(s2)
+    D = matriz(m+1, n+1)
+
+    // Casos base
+    Para i de 0 a m:
+        D[i, 0] = i
+    Para j de 0 a n:
+        D[0, j] = j
+
+    // Llenado de la matriz
+    Para i de 1 a m:
+        Para j de 1 a n:
+            Si s1[i-1] == s2[j-1]:
+                D[i, j] = D[i-1, j-1]
+            Sino:
+                D[i, j] = 1 + minimo(
+                    D[i-1, j],      // eliminación
+                    D[i, j-1],      // inserción
+                    D[i-1, j-1]     // sustitución
+                )
+    Retornar D[m, n]
+
+
+--------------------------------------------------------------------------------
+CÓDIGO EN PYTHON (con buenas prácticas)
+--------------------------------------------------------------------------------
+
+```python
+"""
+Distancia de Levenshtein
+Implementación con programación dinámica.
+Autor: [Tu Nombre]
+Curso: Inteligencia Artificial - UNAM FC
+"""
+
+from typing import List
+
+
+def levenshtein_distance(s1: str, s2: str) -> int:
+    """
+    Calcula la distancia de Levenshtein entre dos cadenas de texto.
+
+    La distancia de Levenshtein es el número mínimo de operaciones
+    de edición (inserción, eliminación o sustitución de un carácter)
+    necesarias para transformar s1 en s2.
+
+    Args:
+        s1 (str): Primera cadena de texto.
+        s2 (str): Segunda cadena de texto.
+
+    Returns:
+        int: Distancia de edición entre s1 y s2.
+
+    Ejemplo:
+        >>> levenshtein_distance("casa", "calle")
+        3
+        >>> levenshtein_distance("kitten", "sitting")
+        3
+    """
+    # Validación de entrada
+    if not isinstance(s1, str) or not isinstance(s2, str):
+        raise TypeError("Ambas entradas deben ser cadenas de texto.")
+
+    m, n = len(s1), len(s2)
+
+    # Casos límite: si una cadena está vacía
+    if m == 0:
+        return n
+    if n == 0:
+        return m
+
+    # Inicializar matriz de programación dinámica (m+1) x (n+1)
+    dp: List[List[int]] = [[0] * (n + 1) for _ in range(m + 1)]
+
+    # Casos base: transformar cadena vacía
+    for i in range(m + 1):
+        dp[i][0] = i  # i eliminaciones para llegar a ""
+    for j in range(n + 1):
+        dp[0][j] = j  # j inserciones desde ""
+
+    # Llenado iterativo de la matriz
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if s1[i - 1] == s2[j - 1]:
+                # Caracteres iguales: no hay costo adicional
+                dp[i][j] = dp[i - 1][j - 1]
+            else:
+                # Caracteres distintos: tomar la operación de menor costo
+                dp[i][j] = 1 + min(
+                    dp[i - 1][j],      # Eliminación
+                    dp[i][j - 1],      # Inserción
+                    dp[i - 1][j - 1],  # Sustitución
+                )
+
+    return dp[m][n]
+
+
+def similarity_ratio(s1: str, s2: str) -> float:
+    """
+    Calcula un porcentaje de similitud entre dos cadenas basado
+    en la distancia de Levenshtein.
+
+    Args:
+        s1 (str): Primera cadena.
+        s2 (str): Segunda cadena.
+
+    Returns:
+        float: Similitud entre 0.0 (totalmente diferentes) y 1.0 (iguales).
+    """
+    if not s1 and not s2:
+        return 1.0
+    max_len = max(len(s1), len(s2))
+    distance = levenshtein_distance(s1, s2)
+    return 1.0 - (distance / max_len)
+
+
+# ------------------------------------------------------------------
+# EJEMPLO DE USO
+# ------------------------------------------------------------------
+if __name__ == "__main__":
+    pruebas = [
+        ("casa", "calle"),
+        ("kitten", "sitting"),
+        ("inteligencia", "inteligente"),
+        ("Messi", "Massa"),
+        ("UNAM", "UNAM"),
+    ]
+
+    print("=" * 60)
+    print("Distancia de Levenshtein")
+    print("=" * 60)
+    for a, b in pruebas:
+        d = levenshtein_distance(a, b)
+        sim = similarity_ratio(a, b) * 100
+        print(f"  '{a}'  vs  '{b}'  →  distancia = {d}  |  similitud = {sim:.1f}%")
+```
+
+
+SALIDA ESPERADA:
+   ============================================================
+   Distancia de Levenshtein
+   ============================================================
+     'casa'  vs  'calle'  →  distancia = 3  |  similitud = 40.0%
+     'kitten'  vs  'sitting'  →  distancia = 3  |  similitud = 57.1%
+     'inteligencia'  vs  'inteligente'  →  distancia = 3  |  similitud = 75.0%
+     'Messi'  vs  'Massa'  →  distancia = 2  |  similitud = 60.0%
+     'UNAM'  vs  'UNAM'  →  distancia = 0  |  similitud = 100.0%
+
+
+--------------------------------------------------------------------------------
+CONCLUSIÓN
+--------------------------------------------------------------------------------
+
+La distancia de Levenshtein es uno de los algoritmos más usados en PLN
+para comparación de cadenas. Aunque es simple, es la base de aplicaciones
+modernas como correctores ortográficos, motores de búsqueda con tolerancia
+a errores y sistemas biomédicos de análisis de ADN. Su limitación es que
+opera a nivel de caracteres y no captura significado semántico — para eso
+existen modelos como Word2Vec.
+
+
+================================================================================
+                       2. WORD2VEC (PNL)
+================================================================================
+
+--------------------------------------------------------------------------------
+CONCEPTO Y FUNDAMENTOS MATEMÁTICOS
+--------------------------------------------------------------------------------
+
+Word2Vec es un modelo de embeddings de palabras propuesto por Mikolov
+et al. (Google, 2013). Convierte palabras en vectores densos de números
+reales que capturan SIGNIFICADO SEMÁNTICO basándose en la HIPÓTESIS
+DISTRIBUCIONAL: "palabras que aparecen en contextos similares tienen
+significados similares".
+
+Fundamentos matemáticos clave:
+
+1. ESPACIO VECTORIAL:
+   Cada palabra w se representa como un vector v_w ∈ ℝᵈ
+   (típicamente d = 100, 200 o 300 dimensiones).
+
+2. SIMILITUD COSENO entre dos palabras:
+                                  v_a · v_b
+       cos(v_a, v_b) = ─────────────────────────
+                         ‖v_a‖ × ‖v_b‖
+
+   Rango: [-1, 1], donde 1 = totalmente similar.
+
+3. DISTANCIA EUCLIDIANA:
+                            ___________________
+                           ╱ d
+       d(v_a, v_b) =   √   Σ (v_a[i] - v_b[i])²
+                           i=1
+
+4. ARITMÉTICA DE VECTORES (relaciones semánticas):
+       v(rey) − v(hombre) + v(mujer) ≈ v(reina)
+       v(París) − v(Francia) + v(Italia) ≈ v(Roma)
+
+5. FUNCIÓN OBJETIVO (Skip-gram):
+   Maximizar la probabilidad de palabras de contexto dado una palabra
+   central w_t en una ventana de tamaño c:
+
+         1   T
+       ─── Σ   Σ   log p(w_{t+j} | w_t)
+        T  t=1  -c ≤ j ≤ c, j ≠ 0
+
+   Donde p(w_O | w_I) se modela con softmax:
+
+                     exp(v'_{w_O}ᵀ · v_{w_I})
+       p(w_O|w_I) = ───────────────────────────
+                     Σ exp(v'_wᵀ · v_{w_I})
+
+   En la práctica se usa NEGATIVE SAMPLING o HIERARCHICAL SOFTMAX
+   para hacerlo computacionalmente viable.
+
+
+--------------------------------------------------------------------------------
+DESCRIPCIÓN NARRATIVA - DOS ARQUITECTURAS
+--------------------------------------------------------------------------------
+
+A. CBOW (Continuous Bag of Words):
+   - Objetivo: predecir la PALABRA CENTRAL a partir del contexto.
+   - Entrada: [Casemiro, Kroos, ___, Vinícius]
+   - Salida: "Modric"
+   - Más rápido, mejor con palabras frecuentes.
+
+B. SKIP-GRAM:
+   - Objetivo: predecir el CONTEXTO a partir de la palabra central.
+   - Entrada: "Pele"
+   - Salida: [Santos, Brasil, Mundial, Gol]
+   - Mejor con datasets pequeños y palabras raras.
+
+
+--------------------------------------------------------------------------------
+ALGORITMO EN LENGUAJE NATURAL
+--------------------------------------------------------------------------------
+
+1. Preprocesamiento del corpus:
+      - Tokenizar los textos.
+      - Convertir a minúsculas.
+      - Eliminar puntuación y caracteres especiales.
+      - (Opcional) Eliminar stopwords.
+2. Construcción del vocabulario:
+      - Crear lista de palabras únicas con índices.
+3. Generación de pares (palabra_central, contexto) con ventana c.
+4. Inicialización aleatoria de matrices W (entrada) y W' (salida)
+   de dimensión |V| × d.
+5. Entrenamiento iterativo:
+      - Por cada par, propagar hacia adelante.
+      - Calcular pérdida con softmax (o negative sampling).
+      - Retropropagar y actualizar pesos con gradiente descendente.
+6. Extraer la matriz W como matriz de embeddings final.
+7. Uso: cada fila de W es el vector v_w de una palabra.
+
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE COMPLEJIDAD
+--------------------------------------------------------------------------------
+
+• Complejidad Temporal del entrenamiento:
+   O(N × c × d × log|V|)   con hierarchical softmax
+   O(N × c × d × k)        con negative sampling
+   Donde:
+      N = número total de palabras en el corpus
+      c = tamaño de la ventana de contexto
+      d = dimensión del embedding
+      |V| = tamaño del vocabulario
+      k = número de muestras negativas
+
+• Complejidad Espacial:
+   O(|V| × d)  para almacenar la matriz de embeddings.
+
+
+--------------------------------------------------------------------------------
+PSEUDOCÓDIGO (Skip-gram simplificado)
+--------------------------------------------------------------------------------
+
+Función Word2Vec_SkipGram(corpus, dim, ventana, epochs):
+    tokens = preprocesar(corpus)
+    vocab = construir_vocabulario(tokens)
+    V = tamaño(vocab)
+
+    W  = matriz_aleatoria(V, dim)   // embedding de entrada
+    W' = matriz_aleatoria(V, dim)   // embedding de salida
+
+    Para epoca de 1 a epochs:
+        Para cada palabra_central w_t en tokens:
+            contexto = obtener_contexto(w_t, ventana)
+            Para cada w_c en contexto:
+                // Forward pass
+                score = W'[w_c] · W[w_t]
+                prob  = softmax(score)
+                // Cálculo de pérdida y backpropagation
+                error = prob - 1
+                actualizar_pesos(W, W', error, learning_rate)
+
+    Retornar W
+
+
+--------------------------------------------------------------------------------
+CÓDIGO EN PYTHON (con buenas prácticas usando Gensim)
+--------------------------------------------------------------------------------
+
+```python
+"""
+Word2Vec con Gensim
+Entrenamiento, similitud y aritmética de vectores.
+Autor: [Tu Nombre]
+Curso: Inteligencia Artificial - UNAM FC
+"""
+
+from typing import List
+from gensim.models import Word2Vec
+from gensim.utils import simple_preprocess
+
+
+def preprocesar_corpus(textos: List[str]) -> List[List[str]]:
+    """
+    Tokeniza y limpia un corpus de textos.
+
+    Args:
+        textos (List[str]): Lista de oraciones o documentos.
+
+    Returns:
+        List[List[str]]: Lista de listas de tokens en minúsculas.
+    """
+    return [simple_preprocess(texto) for texto in textos]
+
+
+def entrenar_word2vec(
+    oraciones: List[List[str]],
+    vector_size: int = 100,
+    window: int = 5,
+    min_count: int = 1,
+    sg: int = 1,
+    epochs: int = 50,
+) -> Word2Vec:
+    """
+    Entrena un modelo Word2Vec sobre un corpus tokenizado.
+
+    Args:
+        oraciones (List[List[str]]): Corpus tokenizado.
+        vector_size (int): Dimensión de los vectores.
+        window (int): Tamaño de la ventana de contexto.
+        min_count (int): Frecuencia mínima de palabras.
+        sg (int): 1 = Skip-gram, 0 = CBOW.
+        epochs (int): Número de épocas de entrenamiento.
+
+    Returns:
+        Word2Vec: Modelo entrenado.
+    """
+    modelo = Word2Vec(
+        sentences=oraciones,
+        vector_size=vector_size,
+        window=window,
+        min_count=min_count,
+        sg=sg,
+        workers=4,
+        epochs=epochs,
+        seed=42,
+    )
+    return modelo
+
+
+# ------------------------------------------------------------------
+# EJEMPLO DE USO
+# ------------------------------------------------------------------
+if __name__ == "__main__":
+    corpus = [
+        "el delantero anotó un gol espectacular",
+        "el atacante anotó un gol de cabeza",
+        "el portero detuvo el penal con seguridad",
+        "el arquero detuvo el remate del rival",
+        "messi anotó un gol increíble",
+        "cristiano ronaldo anotó un gol de chilena",
+        "el defensa marcó al delantero rival",
+        "el zaguero detuvo al atacante en el área",
+        "el entrenador planeó una jugada estratégica",
+        "el técnico diseñó la táctica del partido",
+    ]
+
+    # Preprocesar
+    tokens = preprocesar_corpus(corpus)
+
+    # Entrenar modelo
+    modelo = entrenar_word2vec(tokens, vector_size=50, window=3, epochs=100)
+
+    print("=" * 60)
+    print("Word2Vec - Resultados")
+    print("=" * 60)
+
+    # 1. Palabras más similares a "delantero"
+    print("\nPalabras más similares a 'delantero':")
+    for palabra, sim in modelo.wv.most_similar("delantero", topn=3):
+        print(f"   {palabra}: {sim:.4f}")
+
+    # 2. Similitud entre dos palabras
+    sim = modelo.wv.similarity("delantero", "atacante")
+    print(f"\nSimilitud entre 'delantero' y 'atacante': {sim:.4f}")
+
+    # 3. Vector de una palabra
+    vector = modelo.wv["gol"]
+    print(f"\nVector de 'gol' (primeras 10 dimensiones):\n   {vector[:10]}")
+```
+
+
+SALIDA ESPERADA (aproximada, depende del entrenamiento):
+   Word2Vec - Resultados
+   ============================================================
+   Palabras más similares a 'delantero':
+      atacante: 0.8721
+      rival: 0.7345
+      zaguero: 0.6912
+   
+   Similitud entre 'delantero' y 'atacante': 0.8721
+   
+   Vector de 'gol' (primeras 10 dimensiones):
+      [-0.123  0.456 -0.789  0.234  ...]
+
+
+--------------------------------------------------------------------------------
+CONCLUSIÓN
+--------------------------------------------------------------------------------
+
+Word2Vec revolucionó el PLN al introducir representaciones densas que
+capturan semántica. Mientras Levenshtein compara caracteres, Word2Vec
+compara SIGNIFICADO: entiende que "Balón d'Or" y "Trofeo" son cercanos
+aunque no compartan letras. Es el paso previo a modelos modernos como
+GloVe, FastText, BERT y los Transformers que dan vida a GPT y Claude.
+
+
+================================================================================
+                  3. FILTRO DE SOBEL (VISIÓN COMPUTACIONAL)
+================================================================================
+
+--------------------------------------------------------------------------------
+CONCEPTO Y FUNDAMENTOS MATEMÁTICOS
+--------------------------------------------------------------------------------
+
+El operador de Sobel (Irwin Sobel, 1968) es un filtro clásico de
+DETECCIÓN DE BORDES que aproxima discretamente el GRADIENTE de
+intensidad de una imagen. Se basa en convolucionar la imagen con
+dos kernels 3×3 que calculan las DERIVADAS PARCIALES en las direcciones
+horizontal (Gx) y vertical (Gy).
+
+KERNELS DE SOBEL:
+
+         [ -1   0   +1 ]              [ -1  -2  -1 ]
+   Gx =  [ -2   0   +2 ]       Gy =   [  0   0   0 ]
+         [ -1   0   +1 ]              [ +1  +2  +1 ]
+
+   - Gx detecta cambios horizontales (bordes verticales).
+   - Gy detecta cambios verticales (bordes horizontales).
+
+CONVOLUCIÓN: Para cada píxel (i, j), se calcula:
+
+   Gx(i,j) = Σ Σ I(i+u, j+v) · Kx(u,v)
+   Gy(i,j) = Σ Σ I(i+u, j+v) · Ky(u,v)
+
+MAGNITUD DEL GRADIENTE:
+
+   G(i,j) = √( Gx²(i,j) + Gy²(i,j) )
+
+   Aproximación rápida (sin raíz cuadrada):
+   G ≈ |Gx| + |Gy|
+
+DIRECCIÓN DEL GRADIENTE:
+
+   θ(i,j) = arctan( Gy(i,j) / Gx(i,j) )
+
+   Donde θ indica la orientación del borde (perpendicular al gradiente).
+
+
+--------------------------------------------------------------------------------
+DESCRIPCIÓN NARRATIVA
+--------------------------------------------------------------------------------
+
+Los bordes en una imagen son las zonas donde la intensidad de los
+píxeles cambia de forma abrupta. Matemáticamente, son los puntos donde
+la derivada de la función de intensidad es máxima.
+
+El filtro de Sobel aplica una doble convolución para estimar esas
+derivadas en dos direcciones. La combinación de ambas magnitudes
+permite detectar bordes en cualquier orientación.
+
+Es ampliamente usado como paso previo en:
+   - Detección de objetos (segmentación).
+   - Reconocimiento facial.
+   - Detección de matrículas vehiculares.
+   - Visión en robots autónomos.
+   - Diagnóstico médico por imagen.
+   - Algoritmos más avanzados como Canny edge detector.
+
+
+--------------------------------------------------------------------------------
+ALGORITMO EN LENGUAJE NATURAL
+--------------------------------------------------------------------------------
+
+1. Carga: Leer la imagen en escala de grises.
+2. Preparación: Añadir un marco (padding) de ceros a la imagen
+   para manejar los bordes durante la convolución.
+3. Convolución: Deslizar las máscaras Gx y Gy sobre cada píxel,
+   multiplicando elemento a elemento la región 3x3 y sumando.
+4. Cálculo: Combinar Gx y Gy con la fórmula de magnitud
+   G = √(Gx² + Gy²).
+5. Normalización: Asegurar que los valores de intensidad estén
+   en el rango [0, 255].
+6. Salida: Generar la imagen resultante con los bordes resaltados.
+
+
+--------------------------------------------------------------------------------
+MÉTRICAS DE COMPLEJIDAD
+--------------------------------------------------------------------------------
+
+• Complejidad Temporal: O(M × N)
+   Donde M y N son las dimensiones (filas y columnas) de la imagen.
+   Por cada píxel se realiza un número CONSTANTE de operaciones
+   (9 multiplicaciones y 9 sumas por kernel, 2 kernels = 36 operaciones).
+
+• Complejidad Espacial: O(M × N)
+   Para almacenar las derivadas parciales (Gx, Gy) y la imagen
+   resultante.
+
+
+--------------------------------------------------------------------------------
+PSEUDOCÓDIGO
+--------------------------------------------------------------------------------
+
+Función Sobel(imagen):
+    filas, cols = dimensiones(imagen)
+    resultado = matriz(filas, cols)
+
+    kernel_x = [[-1, 0, 1],
+                [-2, 0, 2],
+                [-1, 0, 1]]
+
+    kernel_y = [[-1, -2, -1],
+                [ 0,  0,  0],
+                [ 1,  2,  1]]
+
+    Para i de 1 a filas-2:
+        Para j de 1 a cols-2:
+            gx = convolucion(imagen, i, j, kernel_x)
+            gy = convolucion(imagen, i, j, kernel_y)
+            resultado[i, j] = raiz_cuadrada(gx^2 + gy^2)
+
+    Retornar normalizar(resultado)
+
+
+--------------------------------------------------------------------------------
+CÓDIGO EN PYTHON (con buenas prácticas)
+--------------------------------------------------------------------------------
+
+```python
+"""
+Filtro de Sobel
+Detección de bordes mediante aproximación del gradiente.
+Autor: [Tu Nombre]
+Curso: Inteligencia Artificial - UNAM FC
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+
+
+# Definición de los kernels de Sobel
+KERNEL_X = np.array([
+    [-1, 0, 1],
+    [-2, 0, 2],
+    [-1, 0, 1]
+], dtype=np.float32)
+
+KERNEL_Y = np.array([
+    [-1, -2, -1],
+    [ 0,  0,  0],
+    [ 1,  2,  1]
+], dtype=np.float32)
+
+
+def aplicar_sobel(imagen: np.ndarray) -> np.ndarray:
+    """
+    Aplica el filtro de Sobel a una imagen en escala de grises
+    para detectar bordes.
+
+    Args:
+        imagen (np.ndarray): Matriz 2D representando la imagen en
+                             escala de grises (valores en [0, 255]).
+
+    Returns:
+        np.ndarray: Imagen resultante con bordes resaltados,
+                    normalizada a [0, 255] (uint8).
+    """
+    # Validar entrada
+    if imagen.ndim != 2:
+        raise ValueError("La imagen debe ser 2D (escala de grises).")
+
+    filas, columnas = imagen.shape
+    resultado = np.zeros_like(imagen, dtype=np.float32)
+
+    # Padding con ceros para manejar los bordes
+    imagen_pad = np.pad(imagen, pad_width=1, mode="constant",
+                        constant_values=0).astype(np.float32)
+
+    # Convolución píxel por píxel
+    for i in range(filas):
+        for j in range(columnas):
+            region = imagen_pad[i:i + 3, j:j + 3]
+            gx = np.sum(region * KERNEL_X)
+            gy = np.sum(region * KERNEL_Y)
+            resultado[i, j] = np.sqrt(gx ** 2 + gy ** 2)
+
+    # Normalización a [0, 255]
+    if resultado.max() > 0:
+        resultado = (resultado / resultado.max()) * 255
+
+    return resultado.astype(np.uint8)
+
+
+def aplicar_sobel_opencv(imagen: np.ndarray) -> np.ndarray:
+    """
+    Versión optimizada usando OpenCV (mucho más rápida).
+
+    Args:
+        imagen (np.ndarray): Imagen en escala de grises.
+
+    Returns:
+        np.ndarray: Magnitud del gradiente normalizada.
+    """
+    gx = cv2.Sobel(imagen, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(imagen, cv2.CV_64F, 0, 1, ksize=3)
+    magnitud = np.sqrt(gx ** 2 + gy ** 2)
+    magnitud = (magnitud / magnitud.max()) * 255
+    return magnitud.astype(np.uint8)
+
+
+# ------------------------------------------------------------------
+# EJEMPLO DE USO
+# ------------------------------------------------------------------
+if __name__ == "__main__":
+    # Cargar imagen en escala de grises
+    # (cambia el path por tu imagen, por ejemplo 'tigre.jpg')
+    imagen = cv2.imread("imagen.jpg", cv2.IMREAD_GRAYSCALE)
+
+    if imagen is None:
+        # Si no hay imagen, crear una sintética con un cuadrado
+        imagen = np.zeros((100, 100), dtype=np.uint8)
+        imagen[30:70, 30:70] = 255
+
+    # Aplicar Sobel (versión manual)
+    bordes_manual = aplicar_sobel(imagen)
+
+    # Aplicar Sobel (versión OpenCV, mucho más rápida)
+    bordes_opencv = aplicar_sobel_opencv(imagen)
+
+    # Visualizar resultados
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+    axs[0].imshow(imagen, cmap="gray");        axs[0].set_title("Original")
+    axs[1].imshow(bordes_manual, cmap="gray"); axs[1].set_title("Sobel manual")
+    axs[2].imshow(bordes_opencv, cmap="gray"); axs[2].set_title("Sobel OpenCV")
+    for ax in axs:
+        ax.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+
+SALIDA ESPERADA:
+   Se mostrarán tres imágenes lado a lado:
+      1. Imagen original.
+      2. Resultado del Sobel implementado a mano.
+      3. Resultado del Sobel con OpenCV (idéntico al manual).
+   Ambos resaltan los contornos / bordes con líneas blancas sobre
+   fondo negro.
+
+
+--------------------------------------------------------------------------------
+CONCLUSIÓN
+--------------------------------------------------------------------------------
+
+El filtro de Sobel es un algoritmo clásico de visión computacional
+sencillo pero poderoso, base de detectores modernos como Canny y
+precursor de las Redes Neuronales Convolucionales (CNN). Su lógica
+fundamental — convolución + cálculo de gradiente — sigue presente en
+las capas iniciales de los modelos de deep learning actuales para
+visión.
+
+
+================================================================================
+                          TIPS PARA EL EXAMEN
+================================================================================
+
+1. ESTRUCTURA SUGERIDA en Colab para cualquier algoritmo:
+
+   📌 Celda 1 (texto): Título y objetivo del algoritmo.
+   📌 Celda 2 (texto): Fundamentos matemáticos.
+   📌 Celda 3 (texto): Descripción narrativa del algoritmo.
+   📌 Celda 4 (texto): Pseudocódigo.
+   📌 Celda 5 (texto): Complejidad temporal y espacial.
+   📌 Celda 6 (código): Implementación en Python con docstrings.
+   📌 Celda 7 (código): Ejemplo de uso y pruebas.
+   📌 Celda 8 (texto): Conclusión y referencias.
+
+2. BUENAS PRÁCTICAS de programación que evaluará la profesora:
+   ✓ Docstrings en cada función (formato Google o NumPy).
+   ✓ Type hints (anotaciones de tipos).
+   ✓ Nombres descriptivos en español o inglés (consistencia).
+   ✓ Validación de entradas (raise errores con mensajes claros).
+   ✓ Comentarios explicativos en partes complejas.
+   ✓ Separación entre lógica y ejemplo (uso de if __name__ == "__main__").
+   ✓ Modularidad: una función = una tarea.
+   ✓ Constantes en MAYÚSCULAS (ej. KERNEL_X).
+   ✓ Importaciones agrupadas al inicio.
+   ✓ Manejo de casos límite (cadenas vacías, imágenes sin contenido).
+
+3. BIBLIOGRAFÍA recomendada (por si pide referencias):
+   - Levenshtein, V. I. (1966). "Binary codes capable of correcting
+     deletions, insertions, and reversals."
+   - Mikolov, T., et al. (2013). "Efficient Estimation of Word
+     Representations in Vector Space."
+   - Sobel, I., Feldman, G. (1968). "A 3x3 Isotropic Gradient
+     Operator for Image Processing."
+   - Russell, S. & Norvig, P. (2020). "Artificial Intelligence:
+     A Modern Approach", 4th ed.
+
+================================================================================
+                              FIN DEL DOCUMENTO
+================================================================================
+¡Mucho éxito mañana! 🐤📚
+
+Recomendación final: Practica corriendo el código en Colab al menos
+una vez ANTES del examen. Si te toca uno de estos algoritmos, ya solo
+tendrás que copiarlo y modificar pequeños detalles (input, comentarios).
+================================================================================
