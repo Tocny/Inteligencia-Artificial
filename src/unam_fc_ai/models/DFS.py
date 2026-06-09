@@ -5,7 +5,7 @@ Facultad de Ciencias
 Materia: Inteligencia Artificial
 Docente: Dra. Jessica Sarahi Méndez Rincón
 Ayudante de Laboratorio: Diego Eduardo Peña Villegas
-Alumno: Escobar González Isaac Giovani
+Alumno: Rubio Resendiz Marco Antonio
 Año escolar: 2026-2
 Copyright: (c) 2025 UNAM - MIT License
 This software is for educational purposes.  
